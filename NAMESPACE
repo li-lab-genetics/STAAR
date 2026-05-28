@@ -10,4 +10,4 @@ useDynLib(STAAR, .registration = TRUE)
 export(CCT, fit_null_glm, fit_null_glmmkin, STAAR, STAAR_cond,
        Indiv_Score_Test_Region, Indiv_Score_Test_Region_cond,
        fit_null_glm_Binary_SPA, fit_null_glmmkin_Binary_SPA,
-       STAAR_Binary_SPA, AI_STAAR)
+       STAAR_Binary_SPA, AI_STAAR, AI_STAAR_Binary_SPA)

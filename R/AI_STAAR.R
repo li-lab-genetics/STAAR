@@ -7,7 +7,7 @@
 #' that aggregated SKAT(1,25), SKAT(1,1), Burden(1,25), Burden(1,1), ACAT-V(1,25),
 #' and ACAT-V(1,1) together with p-values of each test weighted by each annotation
 #' using Cauchy method, across an user-defined number of base tests. The p-values from each base test
-#' are weighted by ancestry-specific ensemble weights estimated independently from the data.  
+#' are weighted by ancestry-specific ensemble weights estimated independently from the data.
 #' @param genotype an n*p genotype matrix (dosage matrix) of the target sequence,
 #' where n is the sample size and p is the number of genetic variants.
 #' @param obj_nullmodel an object from fitting the null model, which is the
@@ -67,7 +67,7 @@
 #' p-values weighted by each annotation, and a STAAR-A(1,1)
 #' p-value by aggregating these p-values using Cauchy method.
 #' @return \code{weight_all_1}: a matrix of ancestry-specific weights across
-#' \code{B} base tests for scenario 1 (if \code{find_weight} = TRUE).  
+#' \code{B} base tests for scenario 1 (if \code{find_weight} = TRUE).
 #' @return \code{weight_all_2}: a matrix of ancestry-specific weights across
 #' \code{B} base tests for scenario 2 (if \code{find_weight} = TRUE).
 #' @return \code{results_weight}: a list of p-values weighted by
@@ -76,7 +76,7 @@
 #' (if \code{find_weight} = TRUE).
 #' @return \code{results_weight1}: a list of p-values weighted by
 #' MAF, annotations, with aggregated components across \code{B} base tests. The p-values
-#' from each base test correspond to weighting scenario 1 (if \code{find_weight} = TRUE). 
+#' from each base test correspond to weighting scenario 1 (if \code{find_weight} = TRUE).
 #' @return \code{results_weight2}: a list of p-values weighted by
 #' MAF, annotations, with aggregated components across \code{B} base tests. The p-values
 #' from each base test correspond to weighting scenario 2 (if \code{find_weight} = TRUE).
@@ -99,7 +99,7 @@
 #' @export
 
 AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
-                     rare_maf_cutoff=0.01,rv_num_cutoff=2, 
+                     rare_maf_cutoff=0.01,rv_num_cutoff=2,
                      rv_num_cutoff_max=1e9, find_weight=FALSE){
 
   if(!inherits(genotype, "matrix") && !inherits(genotype, "Matrix")){
@@ -136,8 +136,8 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
   weight_all_1 <- weight_all_2 <- vector("list", B)
   pvalues_1_tot <- pvalues_2_tot <- vector("list", B)
 
-  n_pop <- length(unique(obj_nullmodel$pop.groups)) 
-  pop <- obj_nullmodel$pop.groups 
+  n_pop <- length(unique(obj_nullmodel$pop.groups))
+  pop <- obj_nullmodel$pop.groups
   indices <- list()
   a_p <- matrix(0, nrow = 1, ncol = n_pop)
   for(i in 1:n_pop){
@@ -145,7 +145,7 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
     indices[[i]] <- which(pop %in% eth)
     a_p[,i] <- mean(apply(as.matrix(Geno_rare[indices[[i]],]), 2, function(x){
       min(mean(x)/2, 1-mean(x)/2)}))
-  }  
+  }
   a_p <- ifelse(a_p > 0, dbeta(a_p,1,25), a_p)
 
   w_b_1 <- w_b_2 <- matrix(0, nrow = 1, ncol = n_pop)
@@ -165,8 +165,8 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       Geno_rare_1 <- Geno_rare_2 <- Geno_rare
 
       for(i in 1:length(w_b_1)){
-        eth <- unique(pop)[i] 
-        eth_wt_1 <- w_b_1[i] 
+        eth <- unique(pop)[i]
+        eth_wt_1 <- w_b_1[i]
         eth_wt_2 <- w_b_2[i]
         Geno_rare_1[indices[[i]],] <- eth_wt_1*Geno_rare[indices[[i]],]
         Geno_rare_2[indices[[i]],] <- eth_wt_2*Geno_rare[indices[[i]],]
@@ -174,7 +174,7 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
 
       G1 <- as(Geno_rare_1,"dgCMatrix")
       G2 <- as(Geno_rare_2,"dgCMatrix")
-      G <- as(Geno_rare,"dgCMatrix") 
+      G <- as(Geno_rare,"dgCMatrix")
       MAF <- MAF[RV_label]
 
       annotation_rank <- 1 - 10^(-annotation_phred/10)
@@ -214,7 +214,7 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       }
 
       if(obj_nullmodel$relatedness){
-        if(!obj_nullmodel$sparse_kins){ 
+        if(!obj_nullmodel$sparse_kins){
           P <- obj_nullmodel$P
 
           residuals.phenotype <- obj_nullmodel$scaled.residuals
@@ -262,19 +262,43 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         pvalues_2_tot[[b]] <- pvalues_2
     }
 
-    pvalues_1_tot <- do.call(cbind, pvalues_1_tot) 
+    pvalues_1_tot <- do.call(cbind, pvalues_1_tot)
     pvalues_2_tot <- do.call(cbind, pvalues_2_tot)
-    pvalues_tot <- cbind(pvalues_1_tot,pvalues_2_tot)
-    pvalues_aggregate <- apply(pvalues_tot,1,function(x){CCT(x)})
 
-    weight_all_1 <- do.call(cbind, weight_all_1) 
-    weight_all_2 <- do.call(cbind, weight_all_2)
+    ind_one_1 <- which(is.na(pvalues_1_tot), arr.ind = TRUE)
+    ind_one_2 <- which(is.na(pvalues_2_tot), arr.ind = TRUE)
+    pvalues_1_tot[ind_one_1] <- pvalues_2_tot[ind_one_2] <- 1
+
+    pvalues_tot <- cbind(pvalues_1_tot,pvalues_2_tot)
+
+    if(sum(pvalues_1_tot == 1) + sum(pvalues_2_tot == 1) == 0){
+      pvalues_aggregate <- apply(pvalues_tot,1,function(x){CCT(x)})
+    }else{
+      pvalues_aggregate <- indices_NA <- c()
+      for(j in 1:ncol(pvalues_tot)){
+        dat <- as.numeric(formatC(pvalues_tot[,j], format="e", digits=50))
+        if(sum(dat == 1) > 0){
+          indices_NA <- c(indices_NA, j)
+        }
+      }
+
+      for(i in 1:nrow(pvalues_tot)){
+        dat <- as.numeric(formatC(pvalues_tot[i,-indices_NA], format="e", digits=50))
+        #unequal weighting by row for final test components (removes NA and 1's) -
+        #refer to later code to apply equal weights across all values
+        pvalues_aggregate <- c(pvalues_aggregate, CCT(dat[dat != 1]))
+      }
+    }
 
     num_variant <- sum(RV_label) #dim(G)[2]
     cMAC <- sum(G)
     num_annotation <- dim(annotation_phred)[2]+1
 
     if(find_weight == TRUE){
+
+      weight_all_1 <- do.call(cbind, weight_all_1)
+      weight_all_2 <- do.call(cbind, weight_all_2)
+
       pvalues_aggregate_weight <- NULL
       results_weight <- results_weight1 <- results_weight2 <- NULL
       for(i in 1:B){
@@ -284,14 +308,199 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       }
       for(i in 1:B){
         ## Combined p-values across 2 scenarios ##
-        results_STAAR_O <- CCT(pvalues_aggregate_weight[,i])
-        results_ACAT_O <- CCT(pvalues_aggregate_weight[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_weight[,i][1:num_annotation])
-        pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_weight[,i][(num_annotation+1):(2*num_annotation)])
-        pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_weight[,i][(2*num_annotation+1):(3*num_annotation)])
-        pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_weight[,i][(3*num_annotation+1):(4*num_annotation)])
-        pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_weight[,i][(4*num_annotation+1):(5*num_annotation)])
-        pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)])
+
+        ## STAAR-O
+        if(sum(is.na(pvalues_aggregate_weight[,i]))>0){
+          ## all NAs
+          if(sum(is.na(pvalues_aggregate_weight[,i]))==length(pvalues_aggregate_weight[,i])){
+            results_STAAR_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][!is.na(pvalues_aggregate_weight[,i])]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_STAAR_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_STAAR_O<- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_weight[,i][pvalues_aggregate_weight[,i]<1])>0){
+            results_STAAR_O <- CCT(pvalues_aggregate_weight[,i][pvalues_aggregate_weight[,i]<1])
+          }else{
+            results_STAAR_O <- 1
+          }
+        }
+
+        ## ACAT-O
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            results_ACAT_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_ACAT_O <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            results_ACAT_O <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_25
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][1:num_annotation]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_1
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][(num_annotation+1):(2*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_25
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][(2*num_annotation+1):(3*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_1
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][(3*num_annotation+1):(4*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_25
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][(4*num_annotation+1):(5*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_1
+        pvalues_aggregate_sub <- pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_1 <- 1
+          }
+        }
+
+        #results_STAAR_O <- CCT(pvalues_aggregate_weight[,i])
+        #results_ACAT_O <- CCT(pvalues_aggregate_weight[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
+        #pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_weight[,i][1:num_annotation])
+        #pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_weight[,i][(num_annotation+1):(2*num_annotation)])
+        #pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_weight[,i][(2*num_annotation+1):(3*num_annotation)])
+        #pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_weight[,i][(3*num_annotation+1):(4*num_annotation)])
+        #pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_weight[,i][(4*num_annotation+1):(5*num_annotation)])
+        #pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)])
 
         results_STAAR_S_1_25 <- c(pvalues_aggregate_weight[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
@@ -311,24 +520,33 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         results_STAAR_A_1_1 <- c(pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)],pvalues_STAAR_A_1_1)
         results_STAAR_A_1_1 <- data.frame(t(results_STAAR_A_1_1))
 
-        colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
-                                            paste0("SKAT(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-S(1,25)")
-        colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
-                                           paste0("SKAT(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-S(1,1)")
-        colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
-                                            paste0("Burden(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-B(1,25)")
-        colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
-                                           paste0("Burden(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-B(1,1)")
-        colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
-                                            paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-A(1,25)")
-        colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
-                                           paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-A(1,1)")
+        if(dim(annotation_phred)[2] == 0){ #FALSE
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)","STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)","STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)","STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)","STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)","STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)","STAAR-A(1,1)")
+        }else{
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
+                                              paste0("SKAT(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
+                                             paste0("SKAT(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
+                                              paste0("Burden(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
+                                             paste0("Burden(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
+                                              paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
+                                             paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-A(1,1)")
+        }
         results_weight <- cbind(results_weight, c(num_variant = num_variant,
                                                   cMAC = cMAC,
                                                   results_STAAR_O = results_STAAR_O,
@@ -342,14 +560,198 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
 
         ## Scenario 1 p-values ##
 
-        results_STAAR_O <- CCT(pvalues_1_tot[,i])
-        results_ACAT_O <- CCT(pvalues_1_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        pvalues_STAAR_S_1_25 <- CCT(pvalues_1_tot[,i][1:num_annotation])
-        pvalues_STAAR_S_1_1 <- CCT(pvalues_1_tot[,i][(num_annotation+1):(2*num_annotation)])
-        pvalues_STAAR_B_1_25 <- CCT(pvalues_1_tot[,i][(2*num_annotation+1):(3*num_annotation)])
-        pvalues_STAAR_B_1_1 <- CCT(pvalues_1_tot[,i][(3*num_annotation+1):(4*num_annotation)])
-        pvalues_STAAR_A_1_25 <- CCT(pvalues_1_tot[,i][(4*num_annotation+1):(5*num_annotation)])
-        pvalues_STAAR_A_1_1 <- CCT(pvalues_1_tot[,i][(5*num_annotation+1):(6*num_annotation)])
+        ## STAAR-O
+        if(sum(is.na(pvalues_1_tot[,i]))>0){
+          ## all NAs
+          if(sum(is.na(pvalues_1_tot[,i]))==length(pvalues_1_tot[,i])){
+            results_STAAR_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_1_tot[,i][!is.na(pvalues_1_tot[,i])]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_STAAR_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_STAAR_O <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_1_tot[,i][pvalues_1_tot[,i]<1])>0){
+            results_STAAR_O <- CCT(pvalues_1_tot[,i][pvalues_1_tot[,i]<1])
+          }else{
+            results_STAAR_O <- 1
+          }
+        }
+
+        ## ACAT-O
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            results_ACAT_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_ACAT_O <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            results_ACAT_O <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_25
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][1:num_annotation]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_1
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][(num_annotation+1):(2*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_25
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][(2*num_annotation+1):(3*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_1
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][(3*num_annotation+1):(4*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_25
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][(4*num_annotation+1):(5*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_1
+        pvalues_aggregate_sub <- pvalues_1_tot[,i][(5*num_annotation+1):(6*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_1 <- 1
+          }
+        }
+
+        #results_STAAR_O <- CCT(pvalues_1_tot[,i])
+        #results_ACAT_O <- CCT(pvalues_1_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
+        #pvalues_STAAR_S_1_25 <- CCT(pvalues_1_tot[,i][1:num_annotation])
+        #pvalues_STAAR_S_1_1 <- CCT(pvalues_1_tot[,i][(num_annotation+1):(2*num_annotation)])
+        #pvalues_STAAR_B_1_25 <- CCT(pvalues_1_tot[,i][(2*num_annotation+1):(3*num_annotation)])
+        #pvalues_STAAR_B_1_1 <- CCT(pvalues_1_tot[,i][(3*num_annotation+1):(4*num_annotation)])
+        #pvalues_STAAR_A_1_25 <- CCT(pvalues_1_tot[,i][(4*num_annotation+1):(5*num_annotation)])
+        #pvalues_STAAR_A_1_1 <- CCT(pvalues_1_tot[,i][(5*num_annotation+1):(6*num_annotation)])
 
         results_STAAR_S_1_25 <- c(pvalues_1_tot[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
@@ -369,24 +771,33 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         results_STAAR_A_1_1 <- c(pvalues_1_tot[,i][(5*num_annotation+1):(6*num_annotation)],pvalues_STAAR_A_1_1)
         results_STAAR_A_1_1 <- data.frame(t(results_STAAR_A_1_1))
 
-        colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
-                                            paste0("SKAT(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-S(1,25)")
-        colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
-                                           paste0("SKAT(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-S(1,1)")
-        colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
-                                            paste0("Burden(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-B(1,25)")
-        colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
-                                           paste0("Burden(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-B(1,1)")
-        colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
-                                            paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-A(1,25)")
-        colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
-                                           paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-A(1,1)")
+        if(dim(annotation_phred)[2] == 0){ #FALSE
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)","STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)","STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)","STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)","STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)","STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)","STAAR-A(1,1)")
+        }else{
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
+                                              paste0("SKAT(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
+                                             paste0("SKAT(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
+                                              paste0("Burden(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
+                                             paste0("Burden(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
+                                              paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
+                                             paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-A(1,1)")
+        }
         results_weight1 <- cbind(results_weight1, c(num_variant = num_variant,
                                                     cMAC = cMAC,
                                                     results_STAAR_O = results_STAAR_O,
@@ -400,14 +811,198 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
 
         ## Scenario 2 p-values ##
 
-        results_STAAR_O <- CCT(pvalues_2_tot[,i])
-        results_ACAT_O <- CCT(pvalues_2_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        pvalues_STAAR_S_1_25 <- CCT(pvalues_2_tot[,i][1:num_annotation])
-        pvalues_STAAR_S_1_1 <- CCT(pvalues_2_tot[,i][(num_annotation+1):(2*num_annotation)])
-        pvalues_STAAR_B_1_25 <- CCT(pvalues_2_tot[,i][(2*num_annotation+1):(3*num_annotation)])
-        pvalues_STAAR_B_1_1 <- CCT(pvalues_2_tot[,i][(3*num_annotation+1):(4*num_annotation)])
-        pvalues_STAAR_A_1_25 <- CCT(pvalues_2_tot[,i][(4*num_annotation+1):(5*num_annotation)])
-        pvalues_STAAR_A_1_1 <- CCT(pvalues_2_tot[,i][(5*num_annotation+1):(6*num_annotation)])
+        ## STAAR-O
+        if(sum(is.na(pvalues_2_tot[,i]))>0){
+          ## all NAs
+          if(sum(is.na(pvalues_2_tot[,i]))==length(pvalues_2_tot[,i])){
+            results_STAAR_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_2_tot[,i][!is.na(pvalues_2_tot[,i])]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_STAAR_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_STAAR_O <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_2_tot[,i][pvalues_2_tot[,i]<1])>0){
+            results_STAAR_O <- CCT(pvalues_2_tot[,i][pvalues_2_tot[,i]<1])
+          }else{
+            results_STAAR_O <- 1
+          }
+        }
+
+        ## ACAT-O
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            results_ACAT_O <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              results_ACAT_O <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            results_ACAT_O <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_25
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][1:num_annotation]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_S_1_1
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][(num_annotation+1):(2*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_S_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_S_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_S_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_25
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][(2*num_annotation+1):(3*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_B_1_1
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][(3*num_annotation+1):(4*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_B_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_B_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_B_1_1 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_25
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][(4*num_annotation+1):(5*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_25 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_25 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_25 <- 1
+          }
+        }
+
+        ## pvalues_STAAR_A_1_1
+        pvalues_aggregate_sub <- pvalues_2_tot[,i][(5*num_annotation+1):(6*num_annotation)]
+        if(sum(is.na(pvalues_aggregate_sub))>0){
+          if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+            pvalues_STAAR_A_1_1 <- 1
+          }else{
+            ## not all NAs
+            pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+            if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+              ## not all ones
+              pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+            }else{
+              pvalues_STAAR_A_1_1 <- 1
+            }
+          }
+        }else{
+          if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+            pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+          }else{
+            pvalues_STAAR_A_1_1 <- 1
+          }
+        }
+
+        #results_STAAR_O <- CCT(pvalues_2_tot[,i])
+        #results_ACAT_O <- CCT(pvalues_2_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
+        #pvalues_STAAR_S_1_25 <- CCT(pvalues_2_tot[,i][1:num_annotation])
+        #pvalues_STAAR_S_1_1 <- CCT(pvalues_2_tot[,i][(num_annotation+1):(2*num_annotation)])
+        #pvalues_STAAR_B_1_25 <- CCT(pvalues_2_tot[,i][(2*num_annotation+1):(3*num_annotation)])
+        #pvalues_STAAR_B_1_1 <- CCT(pvalues_2_tot[,i][(3*num_annotation+1):(4*num_annotation)])
+        #pvalues_STAAR_A_1_25 <- CCT(pvalues_2_tot[,i][(4*num_annotation+1):(5*num_annotation)])
+        #pvalues_STAAR_A_1_1 <- CCT(pvalues_2_tot[,i][(5*num_annotation+1):(6*num_annotation)])
 
         results_STAAR_S_1_25 <- c(pvalues_2_tot[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
@@ -427,24 +1022,33 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         results_STAAR_A_1_1 <- c(pvalues_2_tot[,i][(5*num_annotation+1):(6*num_annotation)],pvalues_STAAR_A_1_1)
         results_STAAR_A_1_1 <- data.frame(t(results_STAAR_A_1_1))
 
-        colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
-                                            paste0("SKAT(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-S(1,25)")
-        colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
-                                           paste0("SKAT(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-S(1,1)")
-        colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
-                                            paste0("Burden(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-B(1,25)")
-        colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
-                                           paste0("Burden(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-B(1,1)")
-        colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
-                                            paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
-                                            "STAAR-A(1,25)")
-        colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
-                                           paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
-                                           "STAAR-A(1,1)")
+        if(dim(annotation_phred)[2] == 0){ #FALSE
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)","STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)","STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)","STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)","STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)","STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)","STAAR-A(1,1)")
+        }else{
+          colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)",
+                                              paste0("SKAT(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-S(1,25)")
+          colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)",
+                                             paste0("SKAT(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-S(1,1)")
+          colnames(results_STAAR_B_1_25) <- c("Burden(1,25)",
+                                              paste0("Burden(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-B(1,25)")
+          colnames(results_STAAR_B_1_1) <- c("Burden(1,1)",
+                                             paste0("Burden(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-B(1,1)")
+          colnames(results_STAAR_A_1_25) <- c("ACAT-V(1,25)",
+                                              paste0("ACAT-V(1,25)-",colnames(annotation_phred)),
+                                              "STAAR-A(1,25)")
+          colnames(results_STAAR_A_1_1) <- c("ACAT-V(1,1)",
+                                             paste0("ACAT-V(1,1)-",colnames(annotation_phred)),
+                                             "STAAR-A(1,1)")
+        }
         results_weight2 <- cbind(results_weight2, c(num_variant = num_variant,
                                                     cMAC = cMAC,
                                                     results_STAAR_O = results_STAAR_O,
@@ -456,14 +1060,200 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
                                                     results_STAAR_A_1_25 = results_STAAR_A_1_25,
                                                     results_STAAR_A_1_1 = results_STAAR_A_1_1))
     }}
-    results_STAAR_O <- CCT(pvalues_aggregate)
-    results_ACAT_O <- CCT(pvalues_aggregate[c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-    pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate[1:num_annotation])
-    pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate[(num_annotation+1):(2*num_annotation)])
-    pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate[(2*num_annotation+1):(3*num_annotation)])
-    pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate[(3*num_annotation+1):(4*num_annotation)])
-    pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate[(4*num_annotation+1):(5*num_annotation)])
-    pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate[(5*num_annotation+1):(6*num_annotation)])
+
+    ## STAAR-O
+    pvalues_aggregate_tot <- as.vector(as.numeric(formatC(pvalues_tot, format="e", digits=50)))
+    if(sum(is.na(pvalues_aggregate_tot))>0){
+      ## all NAs
+      if(sum(is.na(pvalues_aggregate_tot))==length(pvalues_aggregate_tot)){
+        results_STAAR_O <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_tot_sub <- na.omit(as.vector(pvalues_tot))
+        if(sum(pvalues_aggregate_tot_sub[pvalues_aggregate_tot_sub<1])>0){
+          ## not all ones
+          results_STAAR_O <- CCT(pvalues_aggregate_tot_sub[pvalues_aggregate_tot_sub<1])
+        }else{
+          results_STAAR_O <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_tot[pvalues_aggregate_tot<1])>0){
+        results_STAAR_O <- CCT(pvalues_aggregate_tot[pvalues_aggregate_tot<1])
+      }else{
+        results_STAAR_O <- 1
+      }
+    }
+
+    ## ACAT-O
+    pvalues_aggregate_sub <- pvalues_aggregate[c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        results_ACAT_O <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          results_ACAT_O <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        results_ACAT_O <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        results_ACAT_O <- 1
+      }
+    }
+
+    ## pvalues_STAAR_S_1_25
+    pvalues_aggregate_sub <- pvalues_aggregate[1:num_annotation]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_S_1_25 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_S_1_25 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        pvalues_STAAR_S_1_25 <- 1
+      }
+    }
+
+    ## pvalues_STAAR_S_1_1
+    pvalues_aggregate_sub <- pvalues_aggregate[(num_annotation+1):(2*num_annotation)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_S_1_1 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_S_1_1 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        pvalues_STAAR_S_1_1 <- 1
+      }
+    }
+
+    ## pvalues_STAAR_B_1_25
+    pvalues_aggregate_sub <- pvalues_aggregate[(2*num_annotation+1):(3*num_annotation)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_B_1_25 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_B_1_25 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        pvalues_STAAR_B_1_25 <- 1
+      }
+    }
+
+    ## pvalues_STAAR_B_1_1
+    pvalues_aggregate_sub <- pvalues_aggregate[(3*num_annotation+1):(4*num_annotation)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_B_1_1 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_B_1_1 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        pvalues_STAAR_B_1_1 <- 1
+      }
+    }
+
+    ## pvalues_STAAR_A_1_25
+    pvalues_aggregate_sub <- pvalues_aggregate[(4*num_annotation+1):(5*num_annotation)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_A_1_25 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_A_1_25 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        pvalues_STAAR_A_1_25 <- 1
+      }
+    }
+
+    ## pvalues_STAAR_A_1_1
+    pvalues_aggregate_sub <- pvalues_aggregate[(5*num_annotation+1):(6*num_annotation)]
+    if(sum(is.na(pvalues_aggregate_sub))>0){
+      if(sum(is.na(pvalues_aggregate_sub))==length(pvalues_aggregate_sub)){
+        pvalues_STAAR_A_1_1 <- 1
+      }else{
+        ## not all NAs
+        pvalues_aggregate_sub <- pvalues_aggregate_sub[!is.na(pvalues_aggregate_sub)]
+        if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+          ## not all ones
+          pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+        }else{
+          pvalues_STAAR_A_1_1 <- 1
+        }
+      }
+    }else{
+      if(sum(pvalues_aggregate_sub[pvalues_aggregate_sub<1])>0){
+        pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_sub[pvalues_aggregate_sub<1])
+      }else{
+        ppvalues_STAAR_A_1_1 <- 1
+      }
+    }
+
+    #results_STAAR_O <- CCT(pvalues_aggregate)
+    #results_ACAT_O <- CCT(pvalues_aggregate[c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
+    #pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate[1:num_annotation])
+    #pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate[(num_annotation+1):(2*num_annotation)])
+    #pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate[(2*num_annotation+1):(3*num_annotation)])
+    #pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate[(3*num_annotation+1):(4*num_annotation)])
+    #pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate[(4*num_annotation+1):(5*num_annotation)])
+    #pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate[(5*num_annotation+1):(6*num_annotation)])
 
     results_STAAR_S_1_25 <- c(pvalues_aggregate[1:num_annotation],pvalues_STAAR_S_1_25)
     results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
@@ -524,7 +1314,7 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
                   results_STAAR_A_1_25 = results_STAAR_A_1_25,
                   results_STAAR_A_1_1 = results_STAAR_A_1_1,
                   weight_all_1 = weight_all_1,
-                  weight_all_2 = weight_all_2, 
+                  weight_all_2 = weight_all_2,
                   results_weight = results_weight,
                   results_weight1 = results_weight1,
                   results_weight2 = results_weight2))
