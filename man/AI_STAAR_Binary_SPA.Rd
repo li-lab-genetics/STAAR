@@ -2,7 +2,7 @@
 % Please edit documentation in R/AI_STAAR_Binary_SPA.R
 \name{AI_STAAR_Binary_SPA}
 \alias{AI_STAAR_Binary_SPA}
-\title{Ancestry-Informed STAAR procedure using omnibus test}
+\title{Ancestry-Informed STAAR-SPA procedure using omnibus test}
 \usage{
 AI_STAAR_Binary_SPA(
   genotype,
@@ -33,8 +33,7 @@ Continuous scores should be given in PHRED score scale, where the PHRED score
 of j-th variant is defined to be -10*log10(rank(-score_j)/total) across the genome. (Binary)
 categorical scores should be taking values 0 or 1, where 1 is functional and 0 is
 non-functional. If not provided, STAAR will perform the
-SKAT(1,25), SKAT(1,1), Burden(1,25), Burden(1,1), ACAT-V(1,25), ACAT-V(1,1)
-and ACAT-O tests (default = NULL).}
+Burden(1,25) and Burden(1,1) tests (default = NULL).}
 
 \item{rare_maf_cutoff}{the cutoff of maximum minor allele frequency in
 defining rare variants (default = 0.01).}
@@ -44,6 +43,15 @@ a given variant-set (default = 2).}
 
 \item{rv_num_cutoff_max}{the cutoff of maximum number of variants of analyzing
 a given variant-set (default = 1e+09).}
+
+\item{tol}{a positive number specifying tolerance, the difference threshold for parameter
+estimates in saddlepoint apporximation algorithm below which iterations should be stopped (default = ".Machine$double.eps^0.25").}
+
+\item{max_iter}{a positive integers pecifying the maximum number of iterations for applying the saddlepoint approximation algorithm (default = "1000").}
+
+\item{SPA_p_filter}{logical: are only the variants with a normal approximation based p-value smaller than a pre-specified threshold use the SPA method to recalculate the p-value, only used for imbalanced case-control setting (default = FALSE).}
+
+\item{p_filter_cutoff}{threshold for the p-value recalculation using the SPA method, only used for imbalanced case-control setting (default = 0.05).}
 
 \item{find_weight}{logical: should the ancestry group-specific weights and weighting scenario-specific p-values for each base test be saved as output (default = FALSE).}
 }
@@ -60,22 +68,8 @@ minor allele frequency > 0 and less than \code{rare_maf_cutoff} in the given var
 \code{RV_label}: the boolean vector indicating whether each variant in the given
 variant-set has minor allele frequency > 0 and less than \code{rare_maf_cutoff}.
 
-\code{results_STAAR_O}: the STAAR-O p-value that aggregated SKAT(1,25),
-SKAT(1,1), Burden(1,25), Burden(1,1), ACAT-V(1,25), and ACAT-V(1,1) together
+\code{results_STAAR_B}: the STAAR-B p-value that aggregated Burden(1,25) and Burden(1,1) together
 with p-values of each test weighted by each annotation using Cauchy method.
-
-\code{results_ACAT_O}: the ACAT-O p-value that aggregated SKAT(1,25),
-SKAT(1,1), Burden(1,25), Burden(1,1), ACAT-V(1,25), and ACAT-V(1,1) using Cauchy method.
-
-\code{results_STAAR_S_1_25}: a vector of STAAR-S(1,25) p-values,
-including SKAT(1,25) p-value weighted by MAF, the SKAT(1,25)
-p-values weighted by each annotation, and a STAAR-S(1,25)
-p-value by aggregating these p-values using Cauchy method.
-
-\code{results_STAAR_S_1_1}: a vector of STAAR-S(1,1) p-values,
-including SKAT(1,1) p-value weighted by MAF, the SKAT(1,1)
-p-values weighted by each annotation, and a STAAR-S(1,1)
-p-value by aggregating these p-values using Cauchy method.
 
 \code{results_STAAR_B_1_25}: a vector of STAAR-B(1,25) p-values,
 including Burden(1,25) p-value weighted by MAF, the Burden(1,25)
@@ -85,16 +79,6 @@ p-value by aggregating these p-values using Cauchy method.
 \code{results_STAAR_B_1_1}: a vector of STAAR-B(1,1) p-values,
 including Burden(1,1) p-value weighted by MAF, the Burden(1,1)
 p-values weighted by each annotation, and a STAAR-B(1,1)
-p-value by aggregating these p-values using Cauchy method.
-
-\code{results_STAAR_A_1_25}: a vector of STAAR-A(1,25) p-values,
-including ACAT-V(1,25) p-value weighted by MAF, the ACAT-V(1,25)
-p-values weighted by each annotation, and a STAAR-A(1,25)
-p-value by aggregating these p-values using Cauchy method.
-
-\code{results_STAAR_A_1_1}: a vector of STAAR-A(1,1) p-values,
-including ACAT-V(1,1) p-value weighted by MAF, the ACAT-V(1,1)
-p-values weighted by each annotation, and a STAAR-A(1,1)
 p-value by aggregating these p-values using Cauchy method.
 
 \code{weight_all_1}: a matrix of ancestry-specific weights across
@@ -119,10 +103,9 @@ from each base test correspond to weighting scenario 2 (if \code{find_weight} = 
 \description{
 The \code{AI-STAAR_Binary_SPA} function takes in genotype, the object from fitting the null
 model, and functional annotation data to analyze the association between a
-quantitative/dichotomous phenotype and a variant-set by using an ancestry-informed STAAR procedure.
-For each variant-set, the ancestry-informed STAAR-O p-value is a p-value from an omnibus test
-that aggregated SKAT(1,25), SKAT(1,1), Burden(1,25), Burden(1,1), ACAT-V(1,25),
-and ACAT-V(1,1) together with p-values of each test weighted by each annotation
+imbalanced case-control phenotype and a variant-set by using an ancestry-informed STAAR-SPA procedure.
+For each variant-set, the ancestry-informed STAAR-B p-value is a p-value from an omnibus test
+that aggregated Burden(1,25) and Burden(1,1) together with p-values of each test weighted by each annotation
 using Cauchy method, across an user-defined number of base tests. The p-values from each base test
 are weighted by ancestry-specific ensemble weights estimated independently from the data.
 }
