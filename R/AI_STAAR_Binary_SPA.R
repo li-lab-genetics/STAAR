@@ -216,9 +216,6 @@ AI_STAAR_Binary_SPA <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       G1_tilde <-  as.matrix((Diagonal(x = w_vec_1) %*% Geno_rare_1) - (Diagonal(x = w_vec_1) %*% XXWX_inv %*% (XW %*% Geno_rare_1)))
       G2_tilde <-  as.matrix((Diagonal(x = w_vec_2) %*% Geno_rare_2) - (Diagonal(x = w_vec_2) %*% XXWX_inv %*% (XW %*% Geno_rare_2)))
 
-      #G1 <- as(Geno_rare_1,"dgCMatrix")
-      #G2 <- as(Geno_rare_2,"dgCMatrix")
-
       ## use SPA for all p-value calculation
       if(!SPA_p_filter){
         if(obj_nullmodel$relatedness){
@@ -342,8 +339,6 @@ AI_STAAR_Binary_SPA <- function(genotype,obj_nullmodel,annotation_phred=NULL,
 
       for(i in 1:nrow(pvalues_tot)){
         dat <- as.numeric(formatC(pvalues_tot[i,-indices_NA], format="e", digits=50))
-        #unequal weighting by row for final test components (removes NA and 1's) -
-        #refer to later code to apply equal weights across all values
         pvalues_aggregate <- c(pvalues_aggregate, CCT(dat[dat != 1]))
       }
     }
@@ -360,14 +355,12 @@ AI_STAAR_Binary_SPA <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       pvalues_aggregate_weight <- NULL
       results_weight <- results_weight1 <- results_weight2 <- NULL
       for(i in 1:B){
-        #combine p-values across 2 scenarios for each b, to obtain B+1 sets of p-values
         pvalues_aggregate_weight <- cbind(pvalues_aggregate_weight,apply(as.matrix(pvalues_tot[,c(i,i+B)]),1,
                                                                          function(x){CCT(x)}))
       }
       for(i in 1:B){
 
         ## Combined p-values across 2 scenarios ##
-        #calculate p-values for each iteration, including NA's and 1's
 
         ## STAAR-B
         if(sum(is.na(pvalues_aggregate_weight[,i]))>0){

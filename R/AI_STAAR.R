@@ -284,8 +284,6 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
 
       for(i in 1:nrow(pvalues_tot)){
         dat <- as.numeric(formatC(pvalues_tot[i,-indices_NA], format="e", digits=50))
-        #unequal weighting by row for final test components (removes NA and 1's) -
-        #refer to later code to apply equal weights across all values
         pvalues_aggregate <- c(pvalues_aggregate, CCT(dat[dat != 1]))
       }
     }
@@ -302,11 +300,11 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
       pvalues_aggregate_weight <- NULL
       results_weight <- results_weight1 <- results_weight2 <- NULL
       for(i in 1:B){
-        #combine p-values across 2 scenarios for each b, to obtain B+1 sets of p-values
         pvalues_aggregate_weight <-  cbind(pvalues_aggregate_weight,apply(pvalues_tot[,c(i,i+B)],1,
                                                                           function(x){CCT(x)}))
       }
       for(i in 1:B){
+
         ## Combined p-values across 2 scenarios ##
 
         ## STAAR-O
@@ -493,15 +491,6 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
           }
         }
 
-        #results_STAAR_O <- CCT(pvalues_aggregate_weight[,i])
-        #results_ACAT_O <- CCT(pvalues_aggregate_weight[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        #pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate_weight[,i][1:num_annotation])
-        #pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate_weight[,i][(num_annotation+1):(2*num_annotation)])
-        #pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate_weight[,i][(2*num_annotation+1):(3*num_annotation)])
-        #pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate_weight[,i][(3*num_annotation+1):(4*num_annotation)])
-        #pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate_weight[,i][(4*num_annotation+1):(5*num_annotation)])
-        #pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)])
-
         results_STAAR_S_1_25 <- c(pvalues_aggregate_weight[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
 
@@ -520,7 +509,7 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         results_STAAR_A_1_1 <- c(pvalues_aggregate_weight[,i][(5*num_annotation+1):(6*num_annotation)],pvalues_STAAR_A_1_1)
         results_STAAR_A_1_1 <- data.frame(t(results_STAAR_A_1_1))
 
-        if(dim(annotation_phred)[2] == 0){ #FALSE
+        if(dim(annotation_phred)[2] == 0){
           colnames(results_STAAR_S_1_25) <- c("SKAT(1,25)","STAAR-S(1,25)")
           colnames(results_STAAR_S_1_1) <- c("SKAT(1,1)","STAAR-S(1,1)")
           colnames(results_STAAR_B_1_25) <- c("Burden(1,25)","STAAR-B(1,25)")
@@ -743,15 +732,6 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
             pvalues_STAAR_A_1_1 <- 1
           }
         }
-
-        #results_STAAR_O <- CCT(pvalues_1_tot[,i])
-        #results_ACAT_O <- CCT(pvalues_1_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        #pvalues_STAAR_S_1_25 <- CCT(pvalues_1_tot[,i][1:num_annotation])
-        #pvalues_STAAR_S_1_1 <- CCT(pvalues_1_tot[,i][(num_annotation+1):(2*num_annotation)])
-        #pvalues_STAAR_B_1_25 <- CCT(pvalues_1_tot[,i][(2*num_annotation+1):(3*num_annotation)])
-        #pvalues_STAAR_B_1_1 <- CCT(pvalues_1_tot[,i][(3*num_annotation+1):(4*num_annotation)])
-        #pvalues_STAAR_A_1_25 <- CCT(pvalues_1_tot[,i][(4*num_annotation+1):(5*num_annotation)])
-        #pvalues_STAAR_A_1_1 <- CCT(pvalues_1_tot[,i][(5*num_annotation+1):(6*num_annotation)])
 
         results_STAAR_S_1_25 <- c(pvalues_1_tot[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
@@ -995,15 +975,6 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
           }
         }
 
-        #results_STAAR_O <- CCT(pvalues_2_tot[,i])
-        #results_ACAT_O <- CCT(pvalues_2_tot[,i][c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-        #pvalues_STAAR_S_1_25 <- CCT(pvalues_2_tot[,i][1:num_annotation])
-        #pvalues_STAAR_S_1_1 <- CCT(pvalues_2_tot[,i][(num_annotation+1):(2*num_annotation)])
-        #pvalues_STAAR_B_1_25 <- CCT(pvalues_2_tot[,i][(2*num_annotation+1):(3*num_annotation)])
-        #pvalues_STAAR_B_1_1 <- CCT(pvalues_2_tot[,i][(3*num_annotation+1):(4*num_annotation)])
-        #pvalues_STAAR_A_1_25 <- CCT(pvalues_2_tot[,i][(4*num_annotation+1):(5*num_annotation)])
-        #pvalues_STAAR_A_1_1 <- CCT(pvalues_2_tot[,i][(5*num_annotation+1):(6*num_annotation)])
-
         results_STAAR_S_1_25 <- c(pvalues_2_tot[,i][1:num_annotation],pvalues_STAAR_S_1_25)
         results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
 
@@ -1245,15 +1216,6 @@ AI_STAAR <- function(genotype,obj_nullmodel,annotation_phred=NULL,
         ppvalues_STAAR_A_1_1 <- 1
       }
     }
-
-    #results_STAAR_O <- CCT(pvalues_aggregate)
-    #results_ACAT_O <- CCT(pvalues_aggregate[c(1,num_annotation+1,2*num_annotation+1,3*num_annotation+1,4*num_annotation+1,5*num_annotation+1)])
-    #pvalues_STAAR_S_1_25 <- CCT(pvalues_aggregate[1:num_annotation])
-    #pvalues_STAAR_S_1_1 <- CCT(pvalues_aggregate[(num_annotation+1):(2*num_annotation)])
-    #pvalues_STAAR_B_1_25 <- CCT(pvalues_aggregate[(2*num_annotation+1):(3*num_annotation)])
-    #pvalues_STAAR_B_1_1 <- CCT(pvalues_aggregate[(3*num_annotation+1):(4*num_annotation)])
-    #pvalues_STAAR_A_1_25 <- CCT(pvalues_aggregate[(4*num_annotation+1):(5*num_annotation)])
-    #pvalues_STAAR_A_1_1 <- CCT(pvalues_aggregate[(5*num_annotation+1):(6*num_annotation)])
 
     results_STAAR_S_1_25 <- c(pvalues_aggregate[1:num_annotation],pvalues_STAAR_S_1_25)
     results_STAAR_S_1_25 <- data.frame(t(results_STAAR_S_1_25))
