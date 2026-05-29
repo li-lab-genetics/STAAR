@@ -28,13 +28,17 @@ jobs:
           # 2. Tell remotes it is allowed to look at Bioconductor repositories
           options(repos = BiocManager::repositories())
 
-          # 3. Explicitly force install of your custom packages
-          remotes::install_cran("rcmdcheck")
+          # 3. Explicitly install the foundational Bioconductor dependencies needed by GMMAT
+          BiocManager::install(c("SeqArray", "SeqVarTools"), ask = FALSE, update = FALSE)
+
+          # 4. Explicitly pull GMMAT from CRAN and GENESIS from Bioconductor
+          remotes::install_cran(c("rcmdcheck", "GMMAT"))
           BiocManager::install("GENESIS", ask = FALSE, update = FALSE)
 
-          # 4. Install any remaining dependencies listed in your DESCRIPTION file
+          # 5. Clean up any remaining dependencies listed in your DESCRIPTION file
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
+
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
