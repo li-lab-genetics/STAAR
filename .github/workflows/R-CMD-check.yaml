@@ -28,6 +28,11 @@ jobs:
           needs: |
             website
             coverage
+            check
+          install-pandoc: true
+          cache-version: 2
+        env:
+          R_COMPILE_AND_INSTALL_PACKAGES: never
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
