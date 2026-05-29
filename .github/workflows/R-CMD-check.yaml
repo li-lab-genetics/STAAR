@@ -19,26 +19,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: 4.2.3
-      - name: Install dependencies manually
-        run: |
-          # 1. Install core setup tools
-          install.packages(c("remotes", "rcmdcheck", "BiocManager"), repos = "https://cloud.r-project.org")
-
-          # 2. Tell remotes it is allowed to look at Bioconductor repositories
-          options(repos = BiocManager::repositories())
-
-          # 3. Explicitly install the foundational Bioconductor dependencies needed by GMMAT
-          BiocManager::install(c("SeqArray", "SeqVarTools"), ask = FALSE, update = FALSE)
-
-          # 4. Explicitly pull GMMAT from CRAN and GENESIS from Bioconductor
-          remotes::install_cran(c("rcmdcheck", "GMMAT"))
-          BiocManager::install("GENESIS", ask = FALSE, update = FALSE)
-
-          # 5. Clean up any remaining dependencies listed in your DESCRIPTION file
-          remotes::install_deps(dependencies = TRUE)
-        shell: Rscript {0}
-
+          r-version: 'release'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            bioc::GENESIS
+            any::rcmdcheck
+          needs: |
+            website
+            coverage
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}

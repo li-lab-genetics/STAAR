@@ -566,6 +566,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// STAAR_B_Binary_SPA_wt
+arma::vec STAAR_B_Binary_SPA_wt(arma::mat G, arma::vec residuals, arma::vec muhat, arma::mat weights_B, double tol, int max_iter);
+RcppExport SEXP _STAAR_STAAR_B_Binary_SPA_wt(SEXP GSEXP, SEXP residualsSEXP, SEXP muhatSEXP, SEXP weights_BSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type residuals(residualsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type muhat(muhatSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type weights_B(weights_BSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(STAAR_B_Binary_SPA_wt(G, residuals, muhat, weights_B, tol, max_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
 // STAAR_B_SPA
 arma::vec STAAR_B_SPA(arma::mat G, arma::mat XW, arma::mat XXWX_inv, arma::vec residuals, arma::vec muhat, arma::mat weights_B, double tol, int max_iter, double p_filter_cutoff, arma::sp_mat G_sp, arma::mat X, arma::vec working, double sigma, int fam);
 RcppExport SEXP _STAAR_STAAR_B_SPA(SEXP GSEXP, SEXP XWSEXP, SEXP XXWX_invSEXP, SEXP residualsSEXP, SEXP muhatSEXP, SEXP weights_BSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP p_filter_cutoffSEXP, SEXP G_spSEXP, SEXP XSEXP, SEXP workingSEXP, SEXP sigmaSEXP, SEXP famSEXP) {
@@ -631,6 +647,65 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Sigma_iX(Sigma_iXSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type cov(covSEXP);
     rcpp_result_gen = Rcpp::wrap(STAAR_B_SPA_SMMAT_sparse(G, XW, XXWX_inv, residuals, muhat, weights_B, tol, max_iter, p_filter_cutoff, G_sp, Sigma_i, Sigma_iX, cov));
+    return rcpp_result_gen;
+END_RCPP
+}
+// STAAR_B_SPA_SMMAT_sparse_wt
+arma::vec STAAR_B_SPA_SMMAT_sparse_wt(arma::mat G, arma::vec residuals, arma::vec muhat, arma::mat weights_B, double tol, int max_iter, double p_filter_cutoff, arma::sp_mat Sigma_i, arma::mat Sigma_iX, arma::mat cov);
+RcppExport SEXP _STAAR_STAAR_B_SPA_SMMAT_sparse_wt(SEXP GSEXP, SEXP residualsSEXP, SEXP muhatSEXP, SEXP weights_BSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP p_filter_cutoffSEXP, SEXP Sigma_iSEXP, SEXP Sigma_iXSEXP, SEXP covSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type residuals(residualsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type muhat(muhatSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type weights_B(weights_BSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type p_filter_cutoff(p_filter_cutoffSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat >::type Sigma_i(Sigma_iSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Sigma_iX(Sigma_iXSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type cov(covSEXP);
+    rcpp_result_gen = Rcpp::wrap(STAAR_B_SPA_SMMAT_sparse_wt(G, residuals, muhat, weights_B, tol, max_iter, p_filter_cutoff, Sigma_i, Sigma_iX, cov));
+    return rcpp_result_gen;
+END_RCPP
+}
+// STAAR_B_SPA_SMMAT_wt
+arma::vec STAAR_B_SPA_SMMAT_wt(arma::mat G, arma::vec residuals, arma::vec muhat, arma::mat weights_B, double tol, int max_iter, double p_filter_cutoff, arma::mat P);
+RcppExport SEXP _STAAR_STAAR_B_SPA_SMMAT_wt(SEXP GSEXP, SEXP residualsSEXP, SEXP muhatSEXP, SEXP weights_BSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP p_filter_cutoffSEXP, SEXP PSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type residuals(residualsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type muhat(muhatSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type weights_B(weights_BSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type p_filter_cutoff(p_filter_cutoffSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type P(PSEXP);
+    rcpp_result_gen = Rcpp::wrap(STAAR_B_SPA_SMMAT_wt(G, residuals, muhat, weights_B, tol, max_iter, p_filter_cutoff, P));
+    return rcpp_result_gen;
+END_RCPP
+}
+// STAAR_B_SPA_wt
+arma::vec STAAR_B_SPA_wt(arma::mat G, arma::vec residuals, arma::vec muhat, arma::mat weights_B, double tol, int max_iter, double p_filter_cutoff, arma::mat X, arma::vec working, double sigma, int fam);
+RcppExport SEXP _STAAR_STAAR_B_SPA_wt(SEXP GSEXP, SEXP residualsSEXP, SEXP muhatSEXP, SEXP weights_BSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP p_filter_cutoffSEXP, SEXP XSEXP, SEXP workingSEXP, SEXP sigmaSEXP, SEXP famSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type residuals(residualsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type muhat(muhatSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type weights_B(weights_BSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< double >::type p_filter_cutoff(p_filter_cutoffSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type working(workingSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< int >::type fam(famSEXP);
+    rcpp_result_gen = Rcpp::wrap(STAAR_B_SPA_wt(G, residuals, muhat, weights_B, tol, max_iter, p_filter_cutoff, X, working, sigma, fam));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1082,9 +1157,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_STAAR_K_Binary_SPA_alt", (DL_FUNC) &_STAAR_K_Binary_SPA_alt, 3},
     {"_STAAR_NR_Binary_SPA", (DL_FUNC) &_STAAR_NR_Binary_SPA, 6},
     {"_STAAR_STAAR_B_Binary_SPA", (DL_FUNC) &_STAAR_STAAR_B_Binary_SPA, 8},
+    {"_STAAR_STAAR_B_Binary_SPA_wt", (DL_FUNC) &_STAAR_STAAR_B_Binary_SPA_wt, 6},
     {"_STAAR_STAAR_B_SPA", (DL_FUNC) &_STAAR_STAAR_B_SPA, 14},
     {"_STAAR_STAAR_B_SPA_SMMAT", (DL_FUNC) &_STAAR_STAAR_B_SPA_SMMAT, 11},
     {"_STAAR_STAAR_B_SPA_SMMAT_sparse", (DL_FUNC) &_STAAR_STAAR_B_SPA_SMMAT_sparse, 13},
+    {"_STAAR_STAAR_B_SPA_SMMAT_sparse_wt", (DL_FUNC) &_STAAR_STAAR_B_SPA_SMMAT_sparse_wt, 10},
+    {"_STAAR_STAAR_B_SPA_SMMAT_wt", (DL_FUNC) &_STAAR_STAAR_B_SPA_SMMAT_wt, 8},
+    {"_STAAR_STAAR_B_SPA_wt", (DL_FUNC) &_STAAR_STAAR_B_SPA_wt, 11},
     {"_STAAR_STAAR_O", (DL_FUNC) &_STAAR_STAAR_O, 11},
     {"_STAAR_STAAR_O_SMMAT", (DL_FUNC) &_STAAR_STAAR_O_SMMAT, 8},
     {"_STAAR_STAAR_O_SMMAT_sparse", (DL_FUNC) &_STAAR_STAAR_O_SMMAT_sparse, 10},

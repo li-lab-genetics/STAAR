@@ -3,6 +3,7 @@ import(Rcpp, GMMAT, Matrix, methods)
 importFrom("stats", "binomial", "dbeta", "lm", "glm", "model.matrix",
                "pcauchy")
 importFrom("GENESIS", "makeSparseMatrix")
+importFrom("stats", "na.omit")
 
 useDynLib(STAAR, .registration = TRUE)
 
