@@ -16,7 +16,7 @@ double K_Binary_SPA_alt(double x, arma::vec muhat, arma::vec G)
 
     for(int i = 0; i < n; i++)
     {
-		// res = res - x * muhat(i) * G(i);
+		res = res + x * (1 - muhat(i)) * G(i);
 		
         res = res + log((1 - muhat(i))*exp(-x * G(i)) + muhat(i));
     }

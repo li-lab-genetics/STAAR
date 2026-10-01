@@ -142,13 +142,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // Indiv_Score_Test_SMMAT
-List Indiv_Score_Test_SMMAT(arma::sp_mat G, arma::mat P, arma::vec residuals);
+List Indiv_Score_Test_SMMAT(arma::sp_mat G, const arma::mat& P, arma::vec residuals);
 RcppExport SEXP _STAAR_Indiv_Score_Test_SMMAT(SEXP GSEXP, SEXP PSEXP, SEXP residualsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::sp_mat >::type G(GSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type residuals(residualsSEXP);
     rcpp_result_gen = Rcpp::wrap(Indiv_Score_Test_SMMAT(G, P, residuals));
     return rcpp_result_gen;

@@ -19,7 +19,7 @@ double K2_Binary_SPA_alt(double x, arma::vec muhat, arma::vec G)
 
     for(int i = 0; i < n; i++)
     {
-		temp1 = muhat(i) * (1 - muhat(i)) * pow(G(i),2.0);
+		temp1 = muhat(i) * (1 - muhat(i)) * pow(G(i),2.0) * exp(x * G(i));
 		temp2 = muhat(i) * exp(x * G(i)) + (1 - muhat(i));
 		
         res = res + temp1/pow(temp2,2.0);

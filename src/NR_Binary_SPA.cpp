@@ -8,6 +8,26 @@
 
 using namespace Rcpp;
 
+static void K1_K2_Binary_SPA(double x, const arma::vec& muhat, const arma::vec& G, double q, double& first, double& second)
+{
+	first = 0.0;
+	second = 0.0;
+
+	for(arma::uword i = 0; i < muhat.n_elem; i++)
+	{
+		double exponential = exp(-x * G(i));
+		first = first - muhat(i) * G(i);
+		first = first + muhat(i) * G(i)/(muhat(i) + (1 - muhat(i))*exponential);
+		double temp1 = muhat(i) * (1 - muhat(i)) * pow(G(i),2.0)*exponential;
+		double temp2 = muhat(i) + (1 - muhat(i)) * exponential;
+		second = second + temp1/pow(temp2,2.0);
+	}
+
+	first = first - q;
+}
+
+
+
 // declare K_Binary_SPA
 double K_Binary_SPA(double x, arma::vec muhat, arma::vec G);
 // declare K_Binary_SPA_alt (alternative way if not converge)
@@ -37,7 +57,10 @@ double NR_Binary_SPA(arma::vec muhat, arma::vec G, double q, double init, double
 	
 	if(fabs(K1_Binary_SPA(xi, muhat, G, q)) > tol)
 	{
-		xi_update = xi - K1_Binary_SPA(xi, muhat, G, q)/K2_Binary_SPA(xi, muhat, G);
+		double first = 0.0;
+		double second = 0.0;
+		K1_K2_Binary_SPA(xi,muhat,G,q,first,second);
+		xi_update = xi - first/second;
 	}
 	
 	// iteration number
@@ -51,14 +74,14 @@ double NR_Binary_SPA(arma::vec muhat, arma::vec G, double q, double init, double
 		xi = xi_update;	
 		
 		// calculate numerator
-		numerator = K1_Binary_SPA(xi, muhat, G, q);
+		K1_K2_Binary_SPA(xi,muhat,G,q,numerator,denominator);
 		if((R_finite(numerator)==0)||(check_is_na(numerator)))
 		{
 			numerator = K1_Binary_SPA_alt(xi, muhat, G, q);
 		}
 		
 		// calculate denominator
-		denominator = K2_Binary_SPA(xi, muhat, G);
+		
 		if((R_finite(denominator)==0)||(check_is_na(denominator)))
 		{
 			denominator = K2_Binary_SPA_alt(xi, muhat, G);

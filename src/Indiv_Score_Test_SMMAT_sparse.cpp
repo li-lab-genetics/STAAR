@@ -6,6 +6,36 @@
 
 using namespace Rcpp;
 
+static double sparse_col_dot(const arma::sp_mat& A, const arma::sp_mat& B, arma::uword col)
+{
+	arma::sp_mat::const_col_iterator a_it = A.begin_col(col);
+	arma::sp_mat::const_col_iterator a_end = A.end_col(col);
+	arma::sp_mat::const_col_iterator b_it = B.begin_col(col);
+	arma::sp_mat::const_col_iterator b_end = B.end_col(col);
+
+	double out = 0;
+
+	while ((a_it != a_end) && (b_it != b_end))
+	{
+		if (a_it.row() == b_it.row())
+		{
+			out += (*a_it) * (*b_it);
+			++a_it;
+			++b_it;
+		}
+		else if (a_it.row() < b_it.row())
+		{
+			++a_it;
+		}
+		else
+		{
+			++b_it;
+		}
+	}
+
+	return out;
+}
+
 // [[Rcpp::export]]
 List Indiv_Score_Test_SMMAT_sparse(arma::sp_mat G, arma::sp_mat Sigma_i, arma::mat Sigma_iX, arma::mat cov, arma::vec residuals)
 {
@@ -30,23 +60,27 @@ List Indiv_Score_Test_SMMAT_sparse(arma::sp_mat G, arma::sp_mat Sigma_i, arma::m
 	arma::mat tSigma_iX_G;
 	tSigma_iX_G.zeros(q,p);
 
-	arma::mat Cov;
-	Cov.zeros(p,p);
-
+	arma::sp_mat S_G;
+	S_G = Sigma_i*G;
 	tSigma_iX_G = trans(Sigma_iX)*G;
-	Cov = trans(Sigma_i*G)*G - trans(tSigma_iX_G)*cov*tSigma_iX_G;
 
 	for(i = 0; i < p; i++)
 	{
-		Uscore_se(i) = sqrt(Cov(i , i));
+		double Cov_ii = sparse_col_dot(S_G, G, i);
+		if(q > 0)
+		{
+			Cov_ii -= arma::as_scalar(trans(tSigma_iX_G.col(i))*cov*tSigma_iX_G.col(i));
+		}
 
-		if (Cov(i , i) == 0)
+		Uscore_se(i) = sqrt(Cov_ii);
+
+		if (Cov_ii == 0)
 		{
 			pvalue(i) = 1;
 		}
 		else
 		{
-			test_stat = pow(Uscore(i),2)/Cov(i,i);
+			test_stat = pow(Uscore(i),2)/Cov_ii;
 			pvalue(i) = R::pchisq(test_stat,1,false,false);
 		}
 
